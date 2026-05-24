@@ -1,256 +1,337 @@
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useMemo } from 'react'
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell,
+} from 'recharts'
+import {
+  ShoppingBag, DollarSign, Package, AlertTriangle,
+  TrendingUp, ArrowUpRight, Layers,
+} from 'lucide-react'
 
-const COLORS_PIE = ['#018ABE', '#97CADB']
+const COLORS_PIE = ['#7C3AED', '#A78BFA', '#f59e0b', '#ef4444']
+const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
 const InfoCard = ({
-    totalOrders,
-    deliveredCount,
-    shippedCount,
-    cancelledCount,
-    lowStock,
-    bestSelling,
-    loading,
-    errors
-  }) => {
-    if (loading.orders || loading.lowStock || loading.bestSelling) {
-      return (
-        <div className="flex items-center gap-2 text-sm text-(--third) py-4">
-          <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-          </svg>
-          Cargando datos...
-        </div>
-      )
-    }
-  
-    if (errors.orders || errors.lowStock || errors.bestSelling) {
-      return (
-        <div className="flex items-center gap-2 text-sm text-red-500 py-4">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" strokeWidth="2" />
-            <path d="M12 8v4m0 4h.01" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          Error al cargar datos
-        </div>
-      )
-    }
-  
-    const lowStockCount = lowStock?.length ?? 0
-  
-    const cards = [
-      {
-        title: 'Órdenes entregadas',
-        value: deliveredCount,
-        subtitle: `de ${totalOrders} totales`,
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-              d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-          </svg>
-        ),
-        variant: 'primary',
-      },
-      {
-        title: 'Enviadas',
-        value: shippedCount,
-        subtitle: 'listas para entregar',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" />
-          </svg>
-        ),
-        variant: 'secondary',
-      },
-      {
-        title: 'Stock bajo',
-        value: lowStockCount,
-        subtitle: 'productos por reponer',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        ),
-        variant: 'warning',
-      },
-      {
-        title: 'Canceladas',
-        value: cancelledCount,
-        subtitle: 'órdenes canceladas',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        ),
-        variant: 'danger',
-      },
-    ]
-  
-    const variantStyles = {
-      primary: {
-        wrapper: 'bg-(--primary) border-transparent',
-        iconBg: 'bg-white/10',
-        iconColor: 'text-(--fourth)',
-        title: 'text-(--fourth)',
-        value: 'text-white',
-        subtitle: 'text-(--fourth)/70',
-        bar: 'bg-white/20',
-        barFill: 'bg-(--third)',
-      },
-      secondary: {
-        wrapper: 'bg-white border-(--fourth) hover:border-(--third)',
-        iconBg: 'bg-(--fifth)',
-        iconColor: 'text-(--secundary)',
-        title: 'text-(--third)',
-        value: 'text-(--secundary)',
-        subtitle: 'text-gray-400',
-        bar: 'bg-(--fifth)',
-        barFill: 'bg-(--third)',
-      },
-      warning: {
-        wrapper: 'bg-white border-amber-200 hover:border-amber-400',
-        iconBg: 'bg-amber-50',
-        iconColor: 'text-amber-500',
-        title: 'text-amber-500',
-        value: 'text-amber-700',
-        subtitle: 'text-gray-400',
-        bar: 'bg-amber-50',
-        barFill: 'bg-amber-400',
-      },
-      danger: {
-        wrapper: 'bg-white border-red-200 hover:border-red-400',
-        iconBg: 'bg-red-50',
-        iconColor: 'text-red-400',
-        title: 'text-red-400',
-        value: 'text-red-600',
-        subtitle: 'text-gray-400',
-        bar: 'bg-red-50',
-        barFill: 'bg-red-400',
-      },
-    }
-  
-    const getProgress = (card) => {
-      if (card.variant === 'primary' && totalOrders > 0) {
-        return Math.round((deliveredCount / totalOrders) * 100)
-      }
-      if (card.variant === 'secondary' && totalOrders > 0) {
-        return Math.round((shippedCount / totalOrders) * 100)
-      }
-      if (card.variant === 'danger' && totalOrders > 0) {
-        return Math.round((cancelledCount / totalOrders) * 100)
-      }
-      return null
-    }
-  
-    const pieData = [
-      { name: 'Entregadas', value: deliveredCount },
-      { name: 'Enviadas', value: shippedCount },
-    ]
+  orders = [],
+  lowStock,
+  bestSelling,
+  monthlyIncome,
+  totalProducts = 0,
+  categories,
+  loading,
+  errors,
+}) => {
+  const isLoading = loading.orders || loading.lowStock || loading.bestSelling
+  const hasError = errors.orders || errors.lowStock || errors.bestSelling
 
+  const delivered = orders.filter((o) => o.status === 'DELIVERED')
+  const shipped = orders.filter((o) => o.status === 'SHIPPED')
+  const cancelled = orders.filter((o) => o.status === 'CANCELLED')
+  const paid = orders.filter((o) => o.status === 'PAID')
+
+  const lowStockCount = lowStock?.length ?? 0
+  const catCount = Array.isArray(categories) ? categories.length : 0
+
+  const totalRevenue = useMemo(() => {
+    return (monthlyIncome ?? []).reduce((s, i) => s + Number(i.total), 0)
+  }, [monthlyIncome])
+
+  const incomeChart = useMemo(() => {
+    return (monthlyIncome ?? []).map((item) => ({
+      label: MONTHS[item.month - 1] || item.month,
+      income: Number(item.total),
+    }))
+  }, [monthlyIncome])
+
+  const pieData = useMemo(() => {
+    const statusCount = {}
+    orders.forEach((o) => {
+      statusCount[o.status] = (statusCount[o.status] || 0) + 1
+    })
+    const labels = { CREATED: 'Creadas', PAID: 'Pagadas', SHIPPED: 'Enviadas', DELIVERED: 'Entregadas', CANCELLED: 'Canceladas' }
+    return Object.entries(statusCount).map(([status, count]) => ({
+      name: labels[status] || status,
+      value: count,
+    }))
+  }, [orders])
+
+  const bestList = useMemo(() => {
+    return (bestSelling ?? []).slice(0, 5)
+  }, [bestSelling])
+
+  if (isLoading) {
     return (
-      <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card) => {
-            const s = variantStyles[card.variant]
-            const progress = getProgress(card)
-  
-            return (
-              <div
-                key={card.title}
-                className={`
-                  relative rounded-xl border p-5 transition-all duration-200
-                  hover:-translate-y-0.5 hover:shadow-md
-                  ${s.wrapper}
-                `}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <p className={`text-xs font-semibold uppercase tracking-wider ${s.title}`}>
-                    {card.title}
-                  </p>
-                  <div className={`p-1.5 rounded-lg ${s.iconBg} ${s.iconColor}`}>
-                    {card.icon}
-                  </div>
-                </div>
-  
-                <p className={`text-4xl font-bold tabular-nums leading-none mb-1 ${s.value}`}>
-                  {card.value}
-                </p>
-                <p className={`text-xs mt-1.5 ${s.subtitle}`}>
-                  {card.subtitle}
-                </p>
-  
-                {progress !== null && (
-                  <div className="mt-4">
-                    <div className={`h-1 w-full rounded-full overflow-hidden ${s.bar}`}>
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ${s.barFill}`}
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <p className={`text-xs mt-1 text-right ${s.subtitle}`}>{progress}%</p>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
+      <div className="flex items-center gap-2 py-4 text-sm" style={{ color: 'var(--third)' }}>
+        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+        </svg>
+        Cargando datos...
+      </div>
+    )
+  }
 
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border border-(--fourth) p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-(--third) mb-4">
-              Órdenes: Entregadas vs Enviadas
-            </h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  innerRadius={50}
-                  paddingAngle={4}
-                >
-                  {pieData.map((entry) => (
-                    <Cell key={entry.name} fill={COLORS_PIE[pieData.indexOf(entry)]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+  if (hasError) {
+    return (
+      <div className="flex items-center gap-2 py-4 text-sm" style={{ color: 'var(--danger)' }}>
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" strokeWidth="2" />
+          <path d="M12 8v4m0 4h.01" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        Error al cargar datos
+      </div>
+    )
+  }
+
+  const kpiCards = [
+    {
+      label: 'Ingresos totales',
+      value: `$${totalRevenue.toLocaleString('es-CO', { minimumFractionDigits: 2 })}`,
+      sub: 'últimos meses',
+      icon: <DollarSign size={20} />,
+      color: 'var(--third)',
+    },
+    {
+      label: 'Órdenes',
+      value: orders.length,
+      sub: `${delivered.length} entregadas · ${shipped.length} enviadas`,
+      icon: <ShoppingBag size={20} />,
+      color: '#A78BFA',
+    },
+    {
+      label: 'Productos',
+      value: totalProducts,
+      sub: `${catCount} categorías`,
+      icon: <Package size={20} />,
+      color: '#22c55e',
+    },
+    {
+      label: 'Stock bajo',
+      value: lowStockCount,
+      sub: 'productos por reponer',
+      icon: <AlertTriangle size={20} />,
+      color: '#f59e0b',
+    },
+  ]
+
+  return (
+    <div className="space-y-5">
+      {/* Hero revenue */}
+      {totalRevenue > 0 && (
+        <div
+          className="relative overflow-hidden rounded-xl border p-6"
+          style={{
+            background: 'linear-gradient(135deg, #7C3AED 0%, #0C0E19 100%)',
+            borderColor: 'rgba(124,58,237,0.3)',
+          }}
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
+            <div className="w-full h-full rounded-full bg-white blur-3xl transform translate-x-20 -translate-y-20" />
           </div>
-
-          <div className="bg-white rounded-xl border border-(--fourth) p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-(--third) mb-4">
-              Productos más vendidos
-            </h3>
-            <div className="space-y-3">
-              {bestSelling?.map((product, index) => (
-                <div key={product.id ?? index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-xs font-bold text-(--fourth) w-4 text-right shrink-0">
-                      {index + 1}
-                    </span>
-                    <p className="text-sm text-(--secundary) truncate">{product.name}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-(--primary) tabular-nums shrink-0 ml-2">
-                    {product.totalSold ?? product.quantity ?? product.sold}
-                  </span>
-                </div>
-              ))}
-              {(!bestSelling || bestSelling.length === 0) && (
-                <p className="text-sm text-gray-400">Sin datos</p>
-              )}
+          <div className="relative z-10 flex items-center gap-8">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                Ingresos totales
+              </p>
+              <p className="text-4xl font-bold text-white tabular-nums mt-1">
+                ${totalRevenue.toLocaleString('es-CO', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-[12px] mt-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {paid.length} órdenes pagadas · {orders.length} totales
+              </p>
+            </div>
+            <div className="hidden sm:flex items-center gap-6 ml-auto">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white tabular-nums">{delivered.length}</p>
+                <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Entregadas</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white tabular-nums">{cancelled.length}</p>
+                <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Canceladas</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-white tabular-nums">{totalProducts}</p>
+                <p className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Productos</p>
+              </div>
             </div>
           </div>
         </div>
-      </>
-    )
-  }
-  
-  export default InfoCard
+      )}
+
+      {/* KPI Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpiCards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-xl border p-5 transition-all duration-200 hover:-translate-y-0.5"
+            style={{
+              background: 'var(--secondary)',
+              borderColor: 'var(--border)',
+            }}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fourth)', opacity: 0.7 }}>
+                {card.label}
+              </p>
+              <div className="p-1.5 rounded-lg" style={{ background: 'var(--surface)', color: card.color }}>
+                {card.icon}
+              </div>
+            </div>
+            <p className="text-3xl font-bold text-white tabular-nums leading-none mb-1">
+              {card.value}
+            </p>
+            <p className="text-[12px] mt-1" style={{ color: 'var(--fourth)', opacity: 0.7 }}>
+              {card.sub}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div
+          className="rounded-xl border p-5"
+          style={{ background: 'var(--secondary)', borderColor: 'var(--border)' }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fourth)', opacity: 0.7 }}>
+              Ingresos mensuales
+            </h3>
+            <TrendingUp size={16} style={{ color: 'var(--fourth)' }} />
+          </div>
+          {incomeChart.length > 0 ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={incomeChart} margin={{ left: -10, right: 10, top: 5, bottom: 5 }}>
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--fourth)' }} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--fourth)' }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  formatter={(v) => [`$${Number(v).toFixed(2)}`, 'Ingreso']}
+                  contentStyle={{
+                    background: 'var(--secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    color: '#fff',
+                  }}
+                />
+                <Bar dataKey="income" fill="#7C3AED" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-sm" style={{ color: 'var(--fourth)', opacity: 0.6 }}>Sin datos de ingresos</p>
+            </div>
+          )}
+        </div>
+
+        <div
+          className="rounded-xl border p-5"
+          style={{ background: 'var(--secondary)', borderColor: 'var(--border)' }}
+        >
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--fourth)', opacity: 0.7 }}>
+            Estado de órdenes
+          </h3>
+          {pieData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name"
+                  cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={3}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  {pieData.map((entry, i) => (
+                    <Cell key={entry.name} fill={COLORS_PIE[i % COLORS_PIE.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    color: '#fff',
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center py-16">
+              <p className="text-sm" style={{ color: 'var(--fourth)', opacity: 0.6 }}>Sin órdenes</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 rounded-xl border p-5"
+          style={{ background: 'var(--secondary)', borderColor: 'var(--border)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--fourth)', opacity: 0.7 }}>
+              Productos más vendidos
+            </h3>
+            <ArrowUpRight size={16} style={{ color: 'var(--fourth)' }} />
+          </div>
+          {bestList.length > 0 ? (
+            <div className="space-y-2">
+              {bestList.map((p, i) => (
+                <div key={p.productId ?? i}
+                  className="flex items-center gap-3 p-2.5 rounded-lg transition-all hover:translate-x-0.5"
+                  style={{ background: 'var(--surface)' }}>
+                  <span className="text-[11px] font-bold w-5 text-center shrink-0" style={{ color: 'var(--fourth)' }}>
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] text-white font-medium truncate">{p.name}</p>
+                    <p className="text-[11px]" style={{ color: 'var(--fourth)', opacity: 0.6 }}>SKU: {p.sku}</p>
+                  </div>
+                  <span className="text-[13px] font-bold text-white tabular-nums shrink-0">
+                    {p.totalSold}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-10">
+              <p className="text-sm" style={{ color: 'var(--fourth)', opacity: 0.6 }}>Sin datos de ventas</p>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border p-5"
+          style={{ background: 'var(--secondary)', borderColor: 'var(--border)' }}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--fourth)', opacity: 0.7 }}>
+            Resumen rápido
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--surface)' }}>
+              <span className="text-[13px]" style={{ color: 'var(--fourth)' }}>Pagadas</span>
+              <span className="text-[13px] font-bold text-white tabular-nums">{paid.length}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--surface)' }}>
+              <span className="text-[13px]" style={{ color: 'var(--fourth)' }}>Pendientes</span>
+              <span className="text-[13px] font-bold text-white tabular-nums">
+                {orders.filter((o) => o.status === 'CREATED').length}
+              </span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--surface)' }}>
+              <span className="text-[13px]" style={{ color: 'var(--fourth)' }}>Enviadas</span>
+              <span className="text-[13px] font-bold text-white tabular-nums">{shipped.length}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--surface)' }}>
+              <span className="text-[13px]" style={{ color: 'var(--fourth)' }}>Canceladas</span>
+              <span className="text-[13px] font-bold text-white tabular-nums">{cancelled.length}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg" style={{ background: 'var(--surface)' }}>
+              <span className="text-[13px]" style={{ color: 'var(--fourth)' }}>Categorías</span>
+              <span className="flex items-center gap-1.5 text-[13px] font-bold text-white tabular-nums">
+                <Layers size={14} style={{ color: 'var(--third)' }} />
+                {catCount}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default InfoCard

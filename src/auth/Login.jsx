@@ -32,12 +32,21 @@ const Login = () => {
   }
 
   return (
-    <section className="flex min-h-dvh items-center justify-center bg-(--fifth) p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-md">
-        <h1 className="mb-6 text-2xl font-semibold text-(--primary)">Iniciar sesión</h1>
+    <section className="flex min-h-dvh items-center justify-center p-4"
+      style={{ background: 'var(--primary)' }}>
+      <div className="w-full max-w-md rounded-xl p-8"
+        style={{
+          background: 'var(--secondary)',
+          border: '1px solid var(--border)',
+        }}>
+        <p className="text-[10px] font-semibold tracking-[0.22em] uppercase mb-1"
+          style={{ color: 'var(--third)' }}>
+          UniMarket
+        </p>
+        <h1 className="mb-6 text-xl font-bold text-white">Iniciar sesión</h1>
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="email" className="text-sm text-(--secundary)">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="email" className="text-[13px]" style={{ color: 'var(--fourth)' }}>
               Email
             </label>
             <input
@@ -46,11 +55,16 @@ const Login = () => {
               name="email"
               placeholder="Ingrese su email"
               required
-              className="rounded border border-(--fourth) px-3 py-2"
+              className="rounded-lg px-3 py-2 text-[13px] outline-none w-full"
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: '#fff',
+              }}
             />
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="password" className="text-sm text-(--secundary)">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="password" className="text-[13px]" style={{ color: 'var(--fourth)' }}>
               Contraseña
             </label>
             <input
@@ -59,21 +73,31 @@ const Login = () => {
               name="password"
               placeholder="Ingrese su contraseña"
               required
-              className="rounded border border-(--fourth) px-3 py-2"
+              className="rounded-lg px-3 py-2 text-[13px] outline-none w-full"
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: '#fff',
+              }}
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
           <button
             type="submit"
             disabled={submitting}
-            className="rounded bg-(--third) px-4 py-2 text-white disabled:opacity-60"
+            className="rounded-lg px-4 py-2.5 text-[13px] font-semibold disabled:opacity-50 transition-opacity"
+            style={{
+              background: 'var(--third)',
+              color: '#fff',
+            }}
           >
             {submitting ? 'Ingresando...' : 'Iniciar sesión'}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-(--secundary)">
+        <p className="mt-5 text-center text-[13px]" style={{ color: 'var(--fourth)' }}>
           ¿No tienes cuenta?{' '}
-          <Link to="/register" className="text-(--third) underline">
+          <Link to="/register" className="font-medium underline transition-opacity hover:opacity-80"
+            style={{ color: 'var(--third)' }}>
             Registrarse
           </Link>
         </p>
