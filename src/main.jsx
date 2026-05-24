@@ -9,6 +9,8 @@ import Productos from './pages/Productos'
 import Inventario from './pages/Inventario'
 import Pagos from './pages/Pagos'
 import Reportes from './pages/Reportes'
+import Clientes from './pages/Clientes'
+import Categorias from './pages/Categorias'
 import Login from './auth/Login'
 import Register from './auth/Register'
 import ProtectedRoute from './auth/ProtectedRoute'
@@ -67,6 +69,14 @@ const router = createBrowserRouter([
       {
         path: 'reportes',
         element: <Reportes />,
+      },
+      {
+        path: 'clientes',
+        element: <Clientes />,
+      },
+      {
+        path: 'categorias',
+        element: <Categorias />,
       },
     ],
   },

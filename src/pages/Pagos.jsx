@@ -4,7 +4,9 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { fetchOrders } from '../services/api'
+import {
+  fetchOrders, getOrder, getOrderItems, getOrderHistory, updateOrderStatus,
+} from '../services/api'
 
 const PIE_COLORS = ['#22c55e', '#f59e0b', '#7C3AED', '#ef4444', '#A78BFA']
 
@@ -31,6 +33,12 @@ const Pagos = () => {
 
   const [filterStatus, setFilterStatus] = useState('all')
   const [search, setSearch] = useState('')
+
+  const [detailOrder, setDetailOrder] = useState(null)
+  const [detailItems, setDetailItems] = useState([])
+  const [detailHistory, setDetailHistory] = useState([])
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
 
   useEffect(() => {
     fetchOrders()
@@ -93,6 +101,41 @@ const Pagos = () => {
       status,
     }))
   }, [orders])
+
+  const openDetail = async (order) => {
+    setDetailOrder(order)
+    setDetailLoading(true)
+    try {
+      const [items, history] = await Promise.all([
+        getOrderItems(order.id).catch(() => []),
+        getOrderHistory(order.id).catch(() => []),
+      ])
+      setDetailItems(Array.isArray(items) ? items : [])
+      setDetailHistory(Array.isArray(history) ? history : [])
+    } catch {
+      setDetailItems([])
+      setDetailHistory([])
+    } finally {
+      setDetailLoading(false)
+    }
+  }
+
+  const handleStatusUpdate = async (newStatus) => {
+    if (!detailOrder) return
+    setUpdatingStatus(true)
+    try {
+      await updateOrderStatus(detailOrder.id, newStatus)
+      const updated = await getOrder(detailOrder.id)
+      setDetailOrder(updated)
+      const history = await getOrderHistory(detailOrder.id).catch(() => [])
+      setDetailHistory(Array.isArray(history) ? history : [])
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)))
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -346,8 +389,9 @@ const Pagos = () => {
                 return (
                   <tr
                     key={order.id}
-                    className="border-t"
+                    className="border-t cursor-pointer transition-all hover:opacity-80"
                     style={{ borderColor: 'var(--border)' }}
+                    onClick={() => openDetail(order)}
                   >
                     <td className="py-3 pr-4">
                       <span className="text-white font-mono text-[12px]">
@@ -396,6 +440,143 @@ const Pagos = () => {
           </div>
         )}
       </div>
+      {detailOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setDetailOrder(null)}>
+          <div className="rounded-xl border w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+            style={{ background: 'var(--secondary)', borderColor: 'var(--border)' }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 z-10"
+              style={{ borderColor: 'var(--border)', background: 'var(--secondary)' }}>
+              <h2 className="text-sm font-bold text-white">Detalle de orden</h2>
+              <button onClick={() => setDetailOrder(null)}
+                className="p-1 rounded transition-opacity hover:opacity-70"
+                style={{ color: 'var(--fourth)' }}>
+                <XCircle size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-5">
+              {/* Info */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Orden', value: `#${detailOrder.id.slice(0, 8)}` },
+                  { label: 'Cliente', value: detailOrder.customerName || '—' },
+                  { label: 'Total', value: `$${Number(detailOrder.total).toFixed(2)}` },
+                  {
+                    label: 'Estado',
+                    value: STATUS_LABELS[detailOrder.status] || detailOrder.status,
+                    badge: true,
+                    ss: STATUS_STYLES[detailOrder.status] || {},
+                  },
+                ].map((f) => (
+                  <div key={f.label} className="p-3 rounded-lg" style={{ background: 'var(--surface)' }}>
+                    <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: 'var(--fourth)', opacity: 0.6 }}>
+                      {f.label}</p>
+                    {f.badge ? (
+                      <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{ background: f.ss.bg, color: f.ss.color }}>{f.value}</span>
+                    ) : (
+                      <p className="text-[13px] font-semibold text-white">{f.value}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Update status */}
+              <div>
+                <h4 className="text-[11px] uppercase tracking-wider font-semibold mb-2"
+                  style={{ color: 'var(--fourth)', opacity: 0.6 }}>Cambiar estado</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {['CREATED', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED'].map((s) => {
+                    const active = detailOrder.status === s
+                    const ss = STATUS_STYLES[s] || {}
+                    return (
+                      <button key={s} disabled={active || updatingStatus}
+                        onClick={() => handleStatusUpdate(s)}
+                        className="text-[11px] px-2.5 py-1.5 rounded-lg font-semibold transition-opacity disabled:opacity-60 hover:opacity-85"
+                        style={{
+                          background: active ? ss.bg : 'var(--surface)',
+                          color: active ? ss.color : 'var(--fourth)',
+                          border: active ? `1px solid ${ss.color}` : '1px solid transparent',
+                        }}>
+                        {updatingStatus ? '...' : STATUS_LABELS[s]}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Items */}
+              <div>
+                <h4 className="text-[11px] uppercase tracking-wider font-semibold mb-2"
+                  style={{ color: 'var(--fourth)', opacity: 0.6 }}>
+                  Artículos ({detailItems.length})
+                </h4>
+                {detailLoading ? (
+                  <div className="flex items-center gap-2 py-4 text-sm" style={{ color: 'var(--third)' }}>
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                    Cargando...
+                  </div>
+                ) : detailItems.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {detailItems.map((item, i) => (
+                      <div key={item.id || i}
+                        className="flex items-center justify-between p-2.5 rounded-lg text-[12px]"
+                        style={{ background: 'var(--surface)' }}>
+                        <div>
+                          <p className="text-white font-medium">{item.productName || `Producto #${item.productId}`}</p>
+                          <p style={{ color: 'var(--fourth)' }}>
+                            Cantidad: {item.quantity} × ${Number(item.unitPrice).toFixed(2)}
+                          </p>
+                        </div>
+                        <span className="font-semibold text-white">
+                          ${(item.quantity * item.unitPrice).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[12px] py-3" style={{ color: 'var(--fourth)', opacity: 0.5 }}>Sin artículos</p>
+                )}
+              </div>
+
+              {/* History */}
+              <div>
+                <h4 className="text-[11px] uppercase tracking-wider font-semibold mb-2"
+                  style={{ color: 'var(--fourth)', opacity: 0.6 }}>Historial de cambios</h4>
+                {detailHistory.length > 0 ? (
+                  <div className="space-y-1">
+                    {detailHistory.map((h, i) => (
+                      <div key={h.id || i}
+                        className="flex items-center gap-3 p-2.5 rounded-lg text-[12px]"
+                        style={{ background: 'var(--surface)' }}>
+                        <div className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: (STATUS_STYLES[h.status] || {}).color || 'var(--fourth)' }} />
+                        <div className="flex-1">
+                          <span className="font-medium" style={{ color: (STATUS_STYLES[h.status] || {}).color || '#fff' }}>
+                            {STATUS_LABELS[h.status] || h.status}
+                          </span>
+                          {h.notes && (
+                            <span className="ml-2" style={{ color: 'var(--fourth)', opacity: 0.7 }}>— {h.notes}</span>
+                          )}
+                        </div>
+                        <span style={{ color: 'var(--fourth)', opacity: 0.5 }}>
+                          {h.createdAt ? new Date(h.createdAt).toLocaleString('es-CO') : '—'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[12px] py-3" style={{ color: 'var(--fourth)', opacity: 0.5 }}>Sin historial</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }

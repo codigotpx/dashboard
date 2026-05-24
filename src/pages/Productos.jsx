@@ -6,6 +6,8 @@ import {
   fetchProductsByCategory,
   fetchCategories,
   createProduct,
+  updateProduct,
+  setProductActive,
   deleteProduct,
 } from '../services/api'
 
@@ -98,7 +100,25 @@ const Productos = () => {
 
   const closeModal = () => {
     setShowModal(false)
+    setEditingProduct(null)
     setFormError(null)
+  }
+
+  const [editingProduct, setEditingProduct] = useState(null)
+
+  const openEdit = (product) => {
+    setEditingProduct(product)
+    setForm({
+      sku: product.sku || '',
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price?.toString() || '',
+      categoryId: product.categoryId?.toString() || '',
+      active: product.active ?? true,
+      imageUrl: product.imageUrl || '',
+    })
+    setFormError(null)
+    setShowModal(true)
   }
 
   const handleFormChange = (field) => (e) => {
@@ -123,7 +143,7 @@ const Productos = () => {
 
     setSubmitting(true)
     try {
-      await createProduct({
+      const payload = {
         sku: form.sku.trim(),
         name: form.name.trim(),
         description: form.description.trim() || undefined,
@@ -131,12 +151,17 @@ const Productos = () => {
         categoryId: form.categoryId,
         active: form.active,
         imageUrl: form.imageUrl.trim() || undefined,
-      })
+      }
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, payload)
+      } else {
+        await createProduct(payload)
+      }
       closeModal()
       setPage(0)
       loadProducts()
     } catch (err) {
-      let msg = 'Error al crear producto'
+      let msg = editingProduct ? 'Error al actualizar producto' : 'Error al crear producto'
       try {
         const parsed = JSON.parse(err.message)
         msg = parsed.message || msg
@@ -333,13 +358,32 @@ const Productos = () => {
                           </span>
                         </td>
                         <td className="py-3 text-right">
-                          <button
-                            onClick={() => setConfirmDelete(product)}
-                            className="p-1.5 rounded-md transition-opacity hover:opacity-70"
-                            style={{ color: 'rgba(239,68,68,0.6)' }}
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => openEdit(product)}
+                              className="p-1.5 rounded-md text-[11px] transition-opacity hover:opacity-70"
+                              style={{ color: '#A78BFA' }}>
+                              Editar
+                            </button>
+                            <button onClick={async () => {
+                              try {
+                                await setProductActive(product.id, !product.active)
+                                loadProducts()
+                              } catch (err) { alert(err.message) }
+                            }}
+                              className="p-1.5 rounded-md text-[11px] transition-opacity hover:opacity-70"
+                              style={{
+                                color: product.active ? '#f59e0b' : '#22c55e',
+                              }}>
+                              {product.active ? 'Desactivar' : 'Activar'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete(product)}
+                              className="p-1.5 rounded-md transition-opacity hover:opacity-70"
+                              style={{ color: 'rgba(239,68,68,0.6)' }}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                   ))}
@@ -465,7 +509,7 @@ const Productos = () => {
               className="flex items-center justify-between px-5 py-4 border-b"
               style={{ borderColor: 'var(--surface)' }}
             >
-              <h2 className="text-white font-semibold text-[15px]">Nuevo producto</h2>
+              <h2 className="text-white font-semibold text-[15px]">{editingProduct ? 'Editar producto' : 'Nuevo producto'}</h2>
               <button
                 onClick={closeModal}
                 className="p-1 rounded-md transition-opacity hover:opacity-70"
@@ -634,7 +678,7 @@ const Productos = () => {
                     color: '#fff',
                   }}
                 >
-                  {submitting ? 'Guardando...' : 'Guardar'}
+                  {submitting ? 'Guardando...' : editingProduct ? 'Actualizar' : 'Guardar'}
                 </button>
               </div>
             </form>

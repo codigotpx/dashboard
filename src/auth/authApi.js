@@ -27,6 +27,24 @@ export const register = (email, password) =>
     body: JSON.stringify({ email, password }),
   })
 
+export const registerClientWithProfile = (data) =>
+  request('/auth/register/client', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+
+export const registerAdmin = (email, password) =>
+  request('/auth/register/admin', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+
+export const registerCoordinator = (email, password) =>
+  request('/auth/register/coordinator', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+
 export const fetchCurrentUser = () => request('/auth/me')
 
 export const logout = () =>

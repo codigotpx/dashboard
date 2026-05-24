@@ -1,17 +1,38 @@
-import { Link, useLocation } from 'react-router-dom'
-import { Home, BadgeDollarSign, Monitor, BriefcaseBusiness, CreditCard, ChartNoAxesColumnDecreasing } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {
+  Home, BadgeDollarSign, Monitor, BriefcaseBusiness,
+  CreditCard, ChartNoAxesColumnDecreasing, Users,
+  Tags, LogOut,
+} from 'lucide-react'
+import { useAuth } from '../context/useAuth'
 
 const NAV_LINKS = [
   { href: '/inicio', name: 'Inicio', icon: <Home size={17} /> },
   { href: '/ventas', name: 'Ventas', icon: <BadgeDollarSign size={17} /> },
   { href: '/productos', name: 'Productos', icon: <Monitor size={17} /> },
   { href: '/inventario', name: 'Inventario', icon: <BriefcaseBusiness size={17} /> },
+  { href: '/categorias', name: 'Categorías', icon: <Tags size={17} /> },
+  { href: '/clientes', name: 'Clientes', icon: <Users size={17} /> },
   { href: '/pagos', name: 'Pagos', icon: <CreditCard size={17} /> },
   { href: '/reportes', name: 'Reportes', icon: <ChartNoAxesColumnDecreasing size={17} /> },
 ]
 
 const Navbar = () => {
   const { pathname } = useLocation()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const initials = user?.username
+    ? user.username.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+    : 'AD'
+
+  const displayName = user?.username || 'Admin'
+  const email = user?.email || user?.sub || 'admin@caribea.edu'
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <aside
@@ -40,7 +61,7 @@ const Navbar = () => {
         Navegación
       </p>
 
-      <nav className="flex-1 flex flex-col gap-0.5 px-3 pb-3">
+      <nav className="flex-1 flex flex-col gap-0.5 px-3 pb-3 overflow-y-auto">
         {NAV_LINKS.map(({ href, name, icon }) => {
           const active = pathname === href
           return (
@@ -67,24 +88,31 @@ const Navbar = () => {
       </nav>
 
       <div
-        className="px-5 py-4 flex items-center gap-3"
+        className="px-5 py-4 flex flex-col gap-2"
         style={{ borderTop: '1px solid var(--border)' }}
       >
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0"
-          style={{
-            background: 'var(--surface)',
-            color: 'var(--third)',
-          }}
+        <div className="flex items-center gap-3">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold shrink-0"
+            style={{ background: 'var(--surface)', color: 'var(--third)' }}
+          >
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] font-semibold text-white/90 truncate">{displayName}</p>
+            <p className="text-[10px] truncate" style={{ color: 'var(--fourth)', opacity: 0.6 }}>
+              {email}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] w-full transition-all duration-200 hover:opacity-80"
+          style={{ color: 'var(--fourth)', background: 'var(--surface)' }}
         >
-          AD
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[12px] font-semibold text-white/90 truncate">Admin</p>
-          <p className="text-[10px] truncate" style={{ color: 'var(--fourth)', opacity: 0.6 }}>
-            admin@caribea.edu
-          </p>
-        </div>
+          <LogOut size={14} />
+          Cerrar sesión
+        </button>
       </div>
     </aside>
   )
